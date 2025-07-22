@@ -1,24 +1,32 @@
-#ifndef DUCKDB_SHOWSTART_LOG_EXTENSION_H
-#define DUCKDB_SHOWSTART_LOG_EXTENSION_H
+#pragma once
 
 #include "duckdb.hpp"
 #include "duckdb/function/table_function.hpp"
 
+#include <fstream>
+
 namespace duckdb {
 
-class ShowstartLogExtension {
+class ShowstartLogExtension : public Extension {
 public:
-	static void Load(DuckDB &db);
-	static std::string Name();
-	std::string Version() const;
+#ifdef DUCKDB_CPP_EXTENSION_ENTRY
+	void Load(ExtensionLoader &loader) override;
+#else
+	void Load(DuckDB &db) override;
+#endif
+	std::string Name() override;
+	std::string Version() const override;
 };
 
 struct ReadShowstartLogFunctionData : public TableFunctionData {
-	ReadShowstartLogFunctionData() {}
-	vector<std::string> files;
-	idx_t row_index = 0;
+	vector<OpenFileInfo> files;
+	idx_t file_index = 0;
+	std::ifstream current_file;
+	std::string current_path;
+	bool finished = false;
+
+	ReadShowstartLogFunctionData() = default;
+	void OpenNextFile(FileSystem &fs);
 };
 
 } // namespace duckdb
-
-#endif
